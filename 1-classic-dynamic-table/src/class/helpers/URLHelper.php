@@ -3,8 +3,13 @@ namespace App\class\helpers;
 
 
 class URLHelper {
-    public static function bindParams(array $params, array $newParams): string
+    public static function withParam(array $data, string $key, string $value): string
     {
-        return http_build_query(array_merge($params, $newParams));
+        return http_build_query(array_merge($data, [$key => $value]));
+    }
+
+    public static function withParams(array $data, array $params): string
+    {
+        return http_build_query(array_merge($data, $params));
     }
 }

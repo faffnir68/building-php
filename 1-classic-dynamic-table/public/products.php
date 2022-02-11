@@ -4,6 +4,7 @@ require '../vendor/autoload.php';
 $title = "Products";
 
 use App\class\helpers\NumberHelper;
+use App\class\helpers\TableHelper;
 use App\class\helpers\URLHelper;
 
 // Constant
@@ -21,34 +22,43 @@ if(isset($_GET['p'])) {
 } else {
     $currentPage = 1;
 }
+
+// Pages counter
+$reqNbProducts = "SELECT COUNT(id) as 'count_nb' FROM products ";
+
 // Requests
 $req = "SELECT * FROM products ";
 if(isset($_GET['q'])) {
     $q = $_GET['q'];
-    $req .= "WHERE city LIKE :city ";
+    $reqCity = "WHERE city LIKE :city ";
+    $req .= $reqCity;
+    $reqNbProducts .= $reqCity;
     $city = "%".$q."%";
+}
+
+if(isset($_GET['sort'])) {
+    $sortKey = $_GET['sort'];
+    $dir = $_GET['dir'];
+    $req .= " ORDER BY $sortKey $dir ";
 }
 $req .= "LIMIT " . OFFSET*($currentPage-1) . ", " . OFFSET . " ";     
 
-// Pages counter
-$reqNbProducts = "SELECT COUNT(id) as 'count_nb' FROM products";
-$sthNbProducts = $pdo->prepare($reqNbProducts);
-$sthNbProducts->execute();
-$nbProducts = $sthNbProducts->fetchAll();
-$totalPages = ceil((int)$nbProducts[0]['count_nb'] / OFFSET);
-
-
-
 // Preparation
 $sth = $pdo->prepare($req);
+$sthNbProducts = $pdo->prepare($reqNbProducts);
+
 if(isset($_GET['q'])) {
     $sth->bindParam(':city', $city, PDO::PARAM_STR);
+    $sthNbProducts->bindParam(':city', $city, PDO::PARAM_STR);
 }
 
 // Execution
+$sthNbProducts->execute();
 $sth->execute();
 
 // Fetch
+$nbProducts = $sthNbProducts->fetchAll();
+$totalPages = (int)ceil($nbProducts[0]['count_nb'] / OFFSET);
 $products = $sth->fetchAll();
 
 ?>
@@ -67,11 +77,11 @@ $products = $sth->fetchAll();
     <table class="min-w-full">
         <thead class="bg-gray-800 text-white">
             <tr>
-            <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Id</th>
-            <th class="w-1/4 text-left py-3 px-4 uppercase font-semibold text-sm">Name</th>
-            <th class="w-1/4 text-left py-3 px-4 uppercase font-semibold text-sm">Price</th>
-            <th class="w-1/4 text-left py-3 px-4 uppercase font-semibold text-sm">Address</td>
-            <th class="w-1/4 text-left py-3 px-4 uppercase font-semibold text-sm">City</td>
+            <th class="w-1/12 text-left py-3 px-4 uppercase font-semibold text-sm"><?= TableHelper::sort('id', 'Id', $_GET) ?></th>
+            <th class="w-1/4 text-left py-3 px-4 uppercase font-semibold text-sm"><?= TableHelper::sort('name', 'Name', $_GET) ?></th>
+            <th class="w-1/4 text-left py-3 px-4 uppercase font-semibold text-sm"><?= TableHelper::sort('price', 'Price', $_GET) ?></th>
+            <th class="w-1/4 text-left py-3 px-4 uppercase font-semibold text-sm"><?= TableHelper::sort('address', 'Address', $_GET) ?></td>
+            <th class="w-1/4 text-left py-3 px-4 uppercase font-semibold text-sm"><?= TableHelper::sort('city', 'City', $_GET) ?></td>
             </tr>
         </thead>
         <tbody class="">
@@ -94,7 +104,7 @@ $products = $sth->fetchAll();
             <?php if($currentPage > 1): ?>
             <li class="page-item"><a
                 class="page-link relative block py-1.5 px-3 rounded border-0 bg-transparent outline-none transition-all duration-300 rounded text-gray-800 hover:text-gray-800 focus:shadow-none"
-                href="?<?= URLHelper::bindParams($_GET, array('p' => $currentPage-1)) ?>">Previous</a>
+                href="?<?= URLHelper::withParam($_GET, 'p', $currentPage-1) ?>">Previous</a>
             </li>
             <?php endif ?>
             <li class="page-item"><a
@@ -104,7 +114,7 @@ $products = $sth->fetchAll();
             <?php if($currentPage < $totalPages): ?>
             <li class="page-item"><a
                 class="page-link relative block py-1.5 px-3 rounded border-0 bg-transparent outline-none transition-all duration-300 rounded text-gray-800 hover:text-gray-800 hover:bg-gray-200 focus:shadow-none"
-                href="?<?= URLHelper::bindParams($_GET, array('p' => $currentPage+1)) ?>">Next</a>
+                href="?<?= URLHelper::withParam($_GET, 'p', $currentPage+1) ?>">Next</a>
             </li>
             <?php endif ?>
             </ul>
